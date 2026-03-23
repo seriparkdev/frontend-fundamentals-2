@@ -10,10 +10,10 @@ import axios from 'axios';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
 import { formatDate } from 'domains/reservation/utils/time';
-import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
+
 import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
-import { Equipment } from '_tosslib/server/types';
+import { useFilter } from './hooks/useFilter';
 
 const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
   if (hasTimeInputs) {
@@ -27,29 +27,11 @@ const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterPar
   return null;
 };
 
-const parseAsCommaSeparatedArray = createParser<Equipment[]>({
-  parse(v: string) {
-    return v.split(',').filter(Boolean) as Equipment[];
-  },
-  serialize(v: string[]) {
-    return v.join(',');
-  },
-});
-
-const filterParsers = {
-  date: parseAsString.withDefault(formatDate(new Date())),
-  startTime: parseAsString.withDefault(''),
-  endTime: parseAsString.withDefault(''),
-  attendees: parseAsInteger.withDefault(1),
-  equipment: parseAsCommaSeparatedArray.withDefault([]),
-  preferredFloor: parseAsInteger,
-};
-
 export function RoomBookingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [filter, setFilter] = useQueryStates(filterParsers);
+  const [filter, setFilter] = useFilter();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
