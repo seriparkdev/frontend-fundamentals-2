@@ -13,6 +13,7 @@ import { formatDate } from 'domains/reservation/utils/time';
 import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
 import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
+import { Equipment } from '_tosslib/server/types';
 
 const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
   if (hasTimeInputs) {
@@ -26,9 +27,9 @@ const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterPar
   return null;
 };
 
-const parseAsCommaSeparatedArray = createParser({
+const parseAsCommaSeparatedArray = createParser<Equipment[]>({
   parse(v: string) {
-    return v.split(',').filter(Boolean);
+    return v.split(',').filter(Boolean) as Equipment[];
   },
   serialize(v: string[]) {
     return v.join(',');
@@ -280,8 +281,9 @@ export function RoomBookingPage() {
                   type="button"
                   isSelected={selected}
                   onClick={() => {
-                    const next = selected ? filter.equipment.filter(e => e !== eq) : [...filter.equipment, eq];
-                    setFilter({ equipment: next });
+                    setFilter({
+                      equipment: selected ? filter.equipment.filter(e => e !== eq) : [...filter.equipment, eq],
+                    });
                     handleFilterChange();
                   }}
                   aria-label={EQUIPMENT_LABELS[eq]}

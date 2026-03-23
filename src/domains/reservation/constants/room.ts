@@ -1,3 +1,5 @@
+import { Equipment } from '_tosslib/server/types';
+
 export const EQUIPMENT_LABELS: Record<string, string> = {
   tv: 'TV',
   whiteboard: '화이트보드',
@@ -5,4 +7,4 @@ export const EQUIPMENT_LABELS: Record<string, string> = {
   speaker: '스피커',
 };
 
-export const ALL_EQUIPMENT = ['tv', 'whiteboard', 'video', 'speaker'];
+export const ALL_EQUIPMENT: Equipment[] = ['tv', 'whiteboard', 'video', 'speaker'];

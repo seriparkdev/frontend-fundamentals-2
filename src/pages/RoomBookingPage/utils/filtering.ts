@@ -1,8 +1,8 @@
-import { Reservation, Room } from '_tosslib/server/types';
+import { Equipment, Reservation, Room } from '_tosslib/server/types';
 
 export interface RoomFilterParams {
   attendees: number;
-  equipment: string[];
+  equipment: Equipment[];
   preferredFloor: number | null;
   date: string;
   startTime: string;
@@ -11,9 +11,7 @@ export interface RoomFilterParams {
 
 const hasEnoughCapacity = (room: Room, attendees: Reservation['attendees']) => room.capacity >= attendees;
 
-// TODO: 타입 수정
-const hasRequiredEquipment = (room: Room, equipment: string[]) =>
-  equipment.every(eq => room.equipment.includes(eq as Room['equipment'][number]));
+const hasRequiredEquipment = (room: Room, equipment: Equipment[]) => equipment.every(eq => room.equipment.includes(eq));
 
 const hasMatchingFloor = (room: Room, preferredFloor: number | null) =>
   preferredFloor === null || room.floor === preferredFloor;
