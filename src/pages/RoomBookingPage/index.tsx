@@ -11,8 +11,20 @@ import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/r
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
 import { formatDate } from 'domains/reservation/utils/date';
 import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
-import { getAvailableRooms } from './utils/filtering';
+import { getAvailableRooms, RoomFilterParams } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
+
+const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
+  if (hasTimeInputs) {
+    if (filter.endTime <= filter.startTime) {
+      return '종료 시간은 시작 시간보다 늦어야 합니다.';
+    } else if (filter.attendees < 1) {
+      return '참석 인원은 1명 이상이어야 합니다.';
+    }
+  }
+
+  return null;
+};
 
 const parseAsCommaSeparatedArray = createParser({
   parse(v: string) {
@@ -62,21 +74,15 @@ export function RoomBookingPage() {
     setErrorMessage(null);
   };
 
-  let validationError: string | null = null;
   const hasTimeInputs = filter.startTime !== '' && filter.endTime !== '';
-  if (hasTimeInputs) {
-    if (filter.endTime <= filter.startTime) {
-      validationError = '종료 시간은 시작 시간보다 늦어야 합니다.';
-    } else if (filter.attendees < 1) {
-      validationError = '참석 인원은 1명 이상이어야 합니다.';
-    }
-  }
+  const validationError: string | null = getValidationErrorMessage(hasTimeInputs, filter);
+
   const isFilterComplete = hasTimeInputs && !validationError;
 
   // 필터링
   const floors = [...new Set(rooms.map((r: { floor: number }) => r.floor))].sort((a: number, b: number) => a - b);
 
-  const availableRooms = isFilterComplete ? getAvailableRooms(rooms, { ...filter, reservations }) : [];
+  const availableRooms = isFilterComplete ? getAvailableRooms(rooms, filter, reservations) : [];
 
   const handleBook = async () => {
     if (!selectedRoomId) {

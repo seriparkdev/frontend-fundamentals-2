@@ -1,13 +1,12 @@
 import { Reservation, Room } from '_tosslib/server/types';
 
-interface RoomFilterParams {
+export interface RoomFilterParams {
   attendees: number;
   equipment: string[];
   preferredFloor: number | null;
   date: string;
   startTime: string;
   endTime: string;
-  reservations: Reservation[];
 }
 
 const hasEnoughCapacity = (room: Room, attendees: Reservation['attendees']) => room.capacity >= attendees;
@@ -21,16 +20,17 @@ const hasMatchingFloor = (room: Room, preferredFloor: number | null) =>
 
 const hasNoTimeConflict = (
   room: Room,
-  { date, startTime, endTime, reservations }: Pick<RoomFilterParams, 'date' | 'startTime' | 'endTime' | 'reservations'>
+  { date, startTime, endTime }: Pick<RoomFilterParams, 'date' | 'startTime' | 'endTime'>,
+  reservations: Reservation[]
 ) => !reservations.some(r => r.roomId === room.id && r.date === date && r.start < endTime && r.end > startTime);
 
-export const getAvailableRooms = (rooms: Room[], params: RoomFilterParams) =>
+export const getAvailableRooms = (rooms: Room[], params: RoomFilterParams, reservations: Reservation[]) =>
   rooms
     .filter(
       room =>
         hasEnoughCapacity(room, params.attendees) &&
         hasRequiredEquipment(room, params.equipment) &&
         hasMatchingFloor(room, params.preferredFloor) &&
-        hasNoTimeConflict(room, params)
+        hasNoTimeConflict(room, params, reservations)
     )
     .sort((a, b) => (a.floor !== b.floor ? a.floor - b.floor : a.name.localeCompare(b.name)));
