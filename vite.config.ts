@@ -23,6 +23,7 @@ export default defineConfig({
     alias: {
       _tosslib: path.resolve(__dirname, 'src/_tosslib'),
       pages: path.resolve(__dirname, 'src/pages'),
+      domains: path.resolve(__dirname, 'src/domains'),
       containers: path.resolve(__dirname, 'src/containers'),
       components: path.resolve(__dirname, 'src/components'),
       sections: path.resolve(__dirname, 'src/sections'),
