@@ -7,7 +7,7 @@ import { Top, Spacing, Border, Button, Text } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getMyReservations } from 'pages/remotes';
 
-import { formatDate } from 'domains/reservation/utils/date';
+import { formatDate } from 'domains/reservation/utils/time';
 import { MyReservationList } from './components/MyReservation';
 import { RoomTimeline } from './components/RoomTimeline';
 

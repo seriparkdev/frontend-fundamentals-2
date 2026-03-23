@@ -2,8 +2,9 @@ import styled from '@emotion/styled';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, ListRow, Spacing, Text } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
-import { Reservation, Room } from '_tosslib/server/types';
+import { Equipment, Reservation, Room } from '_tosslib/server/types';
 import { EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
+import { formatEquipment } from 'domains/reservation/utils/room';
 import { cancelReservation } from 'pages/remotes';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -13,8 +14,7 @@ interface Props {
   rooms: Room[];
 }
 
-const getRoomName = (rooms: Room[], roomId: string) =>
-  rooms.find((room: { id: string; name: string }) => room.id === roomId)?.name ?? roomId;
+const getRoomName = (rooms: Room[], roomId: string) => rooms.find(room => room.id === roomId)?.name ?? roomId;
 
 export function MyReservationList({ reservations, rooms }: Props) {
   const location = useLocation();
@@ -61,7 +61,7 @@ export function MyReservationList({ reservations, rooms }: Props) {
     <>
       {/* 메시지 배너 */}
       {message && (
-        <SectionPadding>
+        <>
           <MessageBannerBox messageType={message.type}>
             <Text
               typography="t7"
@@ -72,7 +72,7 @@ export function MyReservationList({ reservations, rooms }: Props) {
             </Text>
           </MessageBannerBox>
           <Spacing size={12} />
-        </SectionPadding>
+        </>
       )}
       <ReservationList>
         {reservations.map(reservation => (
@@ -83,7 +83,7 @@ export function MyReservationList({ reservations, rooms }: Props) {
                   top={getRoomName(rooms, reservation.roomId)}
                   topProps={{ typography: 't6', fontWeight: 'bold', color: colors.grey900 }}
                   bottom={`${reservation.date} ${reservation.start}~${reservation.end} · ${reservation.attendees}명 · ${
-                    reservation.equipment.map((e: string) => EQUIPMENT_LABELS[e]).join(', ') || '장비 없음'
+                    formatEquipment(reservation.equipment) || '장비 없음'
                   }`}
                   bottomProps={{ typography: 't7', color: colors.grey600 }}
                 />
@@ -138,8 +138,4 @@ const MessageBannerBox = styled.div<{ messageType: 'success' | 'error' }>`
   display: flex;
   align-items: center;
   gap: 8px;
-`;
-
-const SectionPadding = styled.div`
-  padding: 0 24px;
 `;
