@@ -24,13 +24,11 @@ const hasNoTimeConflict = (
   reservations: Reservation[]
 ) => !reservations.some(r => r.roomId === room.id && r.date === date && r.start < endTime && r.end > startTime);
 
-export const getAvailableRooms = (rooms: Room[], params: RoomFilterParams, reservations: Reservation[]) =>
-  rooms
-    .filter(
-      room =>
-        hasEnoughCapacity(room, params.attendees) &&
-        hasRequiredEquipment(room, params.equipment) &&
-        hasMatchingFloor(room, params.preferredFloor) &&
-        hasNoTimeConflict(room, params, reservations)
-    )
-    .sort((a, b) => (a.floor !== b.floor ? a.floor - b.floor : a.name.localeCompare(b.name)));
+export const isAvilableRoom = (room: Room, filter: RoomFilterParams, reservations: Reservation[]) =>
+  hasEnoughCapacity(room, filter.attendees) &&
+  hasRequiredEquipment(room, filter.equipment) &&
+  hasMatchingFloor(room, filter.preferredFloor) &&
+  hasNoTimeConflict(room, filter, reservations);
+
+export const sortByFloorAscAndName = (a: Room, b: Room) =>
+  a.floor !== b.floor ? a.floor - b.floor : a.name.localeCompare(b.name);

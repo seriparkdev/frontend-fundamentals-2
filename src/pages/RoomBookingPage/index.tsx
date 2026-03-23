@@ -11,7 +11,7 @@ import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/r
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
 import { formatDate } from 'domains/reservation/utils/time';
 import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
-import { getAvailableRooms, RoomFilterParams } from './utils/filtering';
+import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
 
 const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
@@ -82,7 +82,9 @@ export function RoomBookingPage() {
   // 필터링
   const floors = [...new Set(rooms.map((r: { floor: number }) => r.floor))].sort((a: number, b: number) => a - b);
 
-  const availableRooms = isFilterComplete ? getAvailableRooms(rooms, filter, reservations) : [];
+  const availableRooms = isFilterComplete
+    ? rooms.filter(room => isAvilableRoom(room, filter, reservations)).sort(sortByFloorAscAndName)
+    : [];
 
   const handleBook = async () => {
     if (!selectedRoomId) {
