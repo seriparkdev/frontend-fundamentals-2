@@ -1,45 +1,44 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Top, Spacing, Border, Button, Text, Select, ListRow } from '_tosslib/components';
+import { Top, Spacing, Border, Button, Text, Select } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, createReservation } from 'pages/remotes';
 import axios from 'axios';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
 import { formatDate } from 'domains/reservation/utils/date';
+import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
+import { AvailableRooms } from './components/availableRooms';
+
+const parseAsCommaSeparatedArray = createParser({
+  parse(v: string) {
+    return v.split(',').filter(Boolean);
+  },
+  serialize(v: string[]) {
+    return v.join(',');
+  },
+});
+
+const filterParsers = {
+  date: parseAsString.withDefault(formatDate(new Date())),
+  startTime: parseAsString.withDefault(''),
+  endTime: parseAsString.withDefault(''),
+  attendees: parseAsInteger.withDefault(1),
+  equipment: parseAsCommaSeparatedArray.withDefault([]),
+  floor: parseAsInteger,
+};
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [date, setDate] = useState(searchParams.get('date') || formatDate(new Date()));
-  const [startTime, setStartTime] = useState(searchParams.get('startTime') || '');
-  const [endTime, setEndTime] = useState(searchParams.get('endTime') || '');
-  const [attendees, setAttendees] = useState(Number(searchParams.get('attendees')) || 1);
-  const [equipment, setEquipment] = useState<string[]>(
-    searchParams.get('equipment') ? searchParams.get('equipment')!.split(',').filter(Boolean) : []
-  );
-  const [preferredFloor, setPreferredFloor] = useState<number | null>(
-    searchParams.get('floor') ? Number(searchParams.get('floor')) : null
-  );
+  const [{ date, startTime, endTime, attendees, equipment, floor: preferredFloor }, setFilter] =
+    useQueryStates(filterParsers);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // URL 쿼리 파라미터 동기화
-  useEffect(() => {
-    const params: Record<string, string> = {};
-    if (date) params.date = date;
-    if (startTime) params.startTime = startTime;
-    if (endTime) params.endTime = endTime;
-    if (attendees > 1) params.attendees = String(attendees);
-    if (equipment.length > 0) params.equipment = equipment.join(',');
-    if (preferredFloor !== null) params.floor = String(preferredFloor);
-    setSearchParams(params, { replace: true });
-  }, [date, startTime, endTime, attendees, equipment, preferredFloor, setSearchParams]);
 
   const { data: rooms = [] } = useQuery(['rooms'], getRooms);
   const { data: reservations = [] } = useQuery(['reservations', date], () => getReservations(date), {
@@ -182,7 +181,7 @@ export function RoomBookingPage() {
             value={date}
             min={formatDate(new Date())}
             onChange={e => {
-              setDate(e.target.value);
+              setFilter({ date: e.target.value });
               handleFilterChange();
             }}
             aria-label="날짜"
@@ -199,7 +198,7 @@ export function RoomBookingPage() {
             <Select
               value={startTime}
               onChange={e => {
-                setStartTime(e.target.value);
+                setFilter({ startTime: e.target.value });
                 handleFilterChange();
               }}
               aria-label="시작 시간"
@@ -219,7 +218,7 @@ export function RoomBookingPage() {
             <Select
               value={endTime}
               onChange={e => {
-                setEndTime(e.target.value);
+                setFilter({ endTime: e.target.value });
                 handleFilterChange();
               }}
               aria-label="종료 시간"
@@ -246,7 +245,7 @@ export function RoomBookingPage() {
               min={1}
               value={attendees}
               onChange={e => {
-                setAttendees(Math.max(1, Number(e.target.value)));
+                setFilter({ attendees: Math.max(1, Number(e.target.value)) });
                 handleFilterChange();
               }}
               aria-label="참석 인원"
@@ -260,7 +259,7 @@ export function RoomBookingPage() {
               value={preferredFloor ?? ''}
               onChange={e => {
                 const val = e.target.value;
-                setPreferredFloor(val === '' ? null : Number(val));
+                setFilter({ floor: val === '' ? null : Number(val) });
                 handleFilterChange();
               }}
               aria-label="선호 층"
@@ -292,7 +291,7 @@ export function RoomBookingPage() {
                   isSelected={selected}
                   onClick={() => {
                     const next = selected ? equipment.filter(e => e !== eq) : [...equipment, eq];
-                    setEquipment(next);
+                    setFilter({ equipment: next });
                     handleFilterChange();
                   }}
                   aria-label={EQUIPMENT_LABELS[eq]}
@@ -330,51 +329,11 @@ export function RoomBookingPage() {
           </RoomCountHeader>
           <Spacing size={16} />
 
-          {availableRooms.length === 0 ? (
-            <EmptyState>
-              <Text typography="t6" color={colors.grey500}>
-                조건에 맞는 회의실이 없습니다.
-              </Text>
-            </EmptyState>
-          ) : (
-            <RoomList>
-              {availableRooms.map(
-                (room: { id: string; name: string; floor: number; capacity: number; equipment: string[] }) => {
-                  const isSelected = selectedRoomId === room.id;
-                  return (
-                    <RoomCard
-                      key={room.id}
-                      isSelected={isSelected}
-                      onClick={() => setSelectedRoomId(room.id)}
-                      role="button"
-                      aria-pressed={isSelected}
-                      aria-label={room.name}
-                    >
-                      <ListRow
-                        contents={
-                          <ListRow.Text2Rows
-                            top={room.name}
-                            topProps={{ typography: 't6', fontWeight: 'bold', color: colors.grey900 }}
-                            bottom={`${room.floor}층 · ${room.capacity}명 · ${room.equipment
-                              .map((e: string) => EQUIPMENT_LABELS[e])
-                              .join(', ')}`}
-                            bottomProps={{ typography: 't7', color: colors.grey600 }}
-                          />
-                        }
-                        right={
-                          isSelected ? (
-                            <Text typography="t7" fontWeight="bold" color={colors.blue500}>
-                              선택됨
-                            </Text>
-                          ) : undefined
-                        }
-                      />
-                    </RoomCard>
-                  );
-                }
-              )}
-            </RoomList>
-          )}
+          <AvailableRooms
+            availableRooms={availableRooms}
+            selectedRoomId={selectedRoomId}
+            onRoomClick={setSelectedRoomId}
+          />
 
           <Spacing size={16} />
           <Button display="full" onClick={handleBook} disabled={createMutation.isLoading}>
@@ -489,29 +448,4 @@ const RoomCountHeader = styled.div`
   display: flex;
   align-items: baseline;
   gap: 6px;
-`;
-
-const EmptyState = styled.div`
-  padding: 40px 0;
-  text-align: center;
-  background: ${colors.grey50};
-  border-radius: 14px;
-`;
-
-const RoomList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const RoomCard = styled.div<{ isSelected: boolean }>`
-  cursor: pointer;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 2px solid ${({ isSelected }) => (isSelected ? colors.blue500 : colors.grey200)};
-  background: ${({ isSelected }) => (isSelected ? colors.blue50 : colors.white)};
-  transition: all 0.15s;
-  &:hover {
-    border-color: ${({ isSelected }) => (isSelected ? colors.blue500 : colors.grey300)};
-  }
 `;
