@@ -9,13 +9,7 @@ import { getRooms, getReservations, createReservation } from 'pages/remotes';
 import axios from 'axios';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'constants/equipment';
 import { TIME_SLOTS } from 'constants/time';
-
-function formatDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+import { formatDate } from 'utils/date';
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
@@ -145,11 +139,7 @@ export function RoomBookingPage() {
   return (
     <PageWrapper>
       <BackButtonWrapper>
-        <BackButton
-          type="button"
-          onClick={() => navigate('/')}
-          aria-label="뒤로가기"
-        >
+        <BackButton type="button" onClick={() => navigate('/')} aria-label="뒤로가기">
           ← 예약 현황으로
         </BackButton>
       </BackButtonWrapper>
@@ -319,9 +309,7 @@ export function RoomBookingPage() {
       {validationError && (
         <SectionPadding>
           <Spacing size={8} />
-          <ValidationErrorSpan role="alert">
-            {validationError}
-          </ValidationErrorSpan>
+          <ValidationErrorSpan role="alert">{validationError}</ValidationErrorSpan>
         </SectionPadding>
       )}
 

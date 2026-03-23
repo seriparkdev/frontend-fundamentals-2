@@ -8,13 +8,7 @@ import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, getMyReservations, cancelReservation } from 'pages/remotes';
 import { EQUIPMENT_LABELS } from 'constants/equipment';
 import { HOUR_LABELS, TIMELINE_START, TOTAL_MINUTES } from 'constants/time';
-
-function formatDate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
+import { formatDate } from 'utils/date';
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
