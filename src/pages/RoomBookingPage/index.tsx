@@ -2,7 +2,7 @@ import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
 import { Top, Spacing, Border, Button, Text, Select } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, createReservation } from 'pages/remotes';
@@ -14,6 +14,8 @@ import { formatDate } from 'domains/reservation/utils/time';
 import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
 import { useFilter } from './hooks/useFilter';
+import { Reservation } from '_tosslib/server/types';
+import { useReservationMutationOptions } from './queries/reservation';
 
 const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
   if (hasTimeInputs) {
@@ -29,7 +31,6 @@ const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterPar
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [filter, setFilter] = useFilter();
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -40,22 +41,17 @@ export function RoomBookingPage() {
     enabled: !!filter.date,
   });
 
-  const createMutation = useMutation(
-    (data: { roomId: string; date: string; start: string; end: string; attendees: number; equipment: string[] }) =>
-      createReservation(data),
-    {
-      onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries(['reservations', variables.date]);
-        queryClient.invalidateQueries(['myReservations']);
-      },
-    }
-  );
-
   // 필터 변경 시 선택 초기화
-  const handleFilterChange = () => {
+  const handleFilterChange = (message?: string) => {
     setSelectedRoomId(null);
-    setErrorMessage(null);
+    setErrorMessage(message ?? null);
   };
+
+  const reservationMutationOptions = useReservationMutationOptions(handleFilterChange);
+  const createMutation = useMutation(
+    (data: Omit<Reservation, 'id'>) => createReservation(data),
+    reservationMutationOptions
+  );
 
   const hasTimeInputs = filter.startTime !== '' && filter.endTime !== '';
   const validationError: string | null = getValidationErrorMessage(hasTimeInputs, filter);
@@ -69,7 +65,7 @@ export function RoomBookingPage() {
     ? rooms.filter(room => isAvilableRoom(room, filter, reservations)).sort(sortByFloorAscAndName)
     : [];
 
-  const handleBook = async () => {
+  const handleBook = () => {
     if (!selectedRoomId) {
       setErrorMessage('회의실을 선택해주세요.');
       return;
@@ -79,33 +75,14 @@ export function RoomBookingPage() {
       return;
     }
 
-    try {
-      const result = await createMutation.mutateAsync({
-        roomId: selectedRoomId,
-        date: filter.date,
-        start: filter.startTime,
-        end: filter.endTime,
-        attendees: filter.attendees,
-        equipment: filter.equipment,
-      });
-
-      if ('ok' in result && result.ok) {
-        navigate('/', { state: { message: '예약이 완료되었습니다!' } });
-        return;
-      }
-
-      const errResult = result as { message?: string };
-      setErrorMessage(errResult.message ?? '예약에 실패했습니다.');
-      setSelectedRoomId(null);
-    } catch (err: unknown) {
-      let serverMessage = '예약에 실패했습니다.';
-      if (axios.isAxiosError(err)) {
-        const data = err.response?.data as { message?: string } | undefined;
-        serverMessage = data?.message ?? serverMessage;
-      }
-      setErrorMessage(serverMessage);
-      setSelectedRoomId(null);
-    }
+    createMutation.mutate({
+      roomId: selectedRoomId,
+      date: filter.date,
+      start: filter.startTime,
+      end: filter.endTime,
+      attendees: filter.attendees,
+      equipment: filter.equipment,
+    });
   };
 
   return (
