@@ -9,7 +9,7 @@ import { getRooms, getReservations, createReservation } from 'pages/remotes';
 import axios from 'axios';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
-import { formatDate } from 'domains/reservation/utils/date';
+import { formatDate } from 'domains/reservation/utils/time';
 import { useQueryStates, parseAsString, parseAsInteger, createParser } from 'nuqs';
 import { getAvailableRooms, RoomFilterParams } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
