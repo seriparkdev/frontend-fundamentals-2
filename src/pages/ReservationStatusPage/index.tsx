@@ -6,9 +6,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Top, Spacing, Border, Button, Text, ListRow } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, getMyReservations, cancelReservation } from 'pages/remotes';
-import { EQUIPMENT_LABELS } from 'constants/equipment';
-import { HOUR_LABELS, TIMELINE_START, TOTAL_MINUTES } from 'constants/time';
-import { formatDate } from 'utils/date';
+import { EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
+import { HOUR_LABELS, TIMELINE_START, TOTAL_MINUTES } from 'domains/reservation/constants/time';
+import { formatDate } from 'domains/reservation/utils/date';
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);

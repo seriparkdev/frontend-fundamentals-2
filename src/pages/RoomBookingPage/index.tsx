@@ -7,9 +7,9 @@ import { Top, Spacing, Border, Button, Text, Select, ListRow } from '_tosslib/co
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, createReservation } from 'pages/remotes';
 import axios from 'axios';
-import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'constants/equipment';
-import { TIME_SLOTS } from 'constants/time';
-import { formatDate } from 'utils/date';
+import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
+import { TIME_SLOTS } from 'domains/reservation/constants/time';
+import { formatDate } from 'domains/reservation/utils/date';
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
