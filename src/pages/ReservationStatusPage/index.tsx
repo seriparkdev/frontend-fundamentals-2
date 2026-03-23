@@ -1,4 +1,5 @@
 import { css } from '@emotion/react';
+import styled from '@emotion/styled';
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -65,12 +66,7 @@ export function ReservationStatusPage() {
     rooms.find((r: { id: string; name: string }) => r.id === roomId)?.name ?? roomId;
 
   return (
-    <div
-      css={css`
-        background: ${colors.white};
-        padding-bottom: 40px;
-      `}
-    >
+    <PageWrapper>
       <Top.Top03
         css={css`
           padding-left: 24px;
@@ -83,94 +79,38 @@ export function ReservationStatusPage() {
       <Spacing size={24} />
 
       {/* 날짜 선택 */}
-      <div
-        css={css`
-          padding: 0 24px;
-        `}
-      >
+      <SectionPadding>
         <Text typography="t5" fontWeight="bold" color={colors.grey900}>
           날짜 선택
         </Text>
         <Spacing size={16} />
-        <div
-          css={css`
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-          `}
-        >
-          <input
+        <FieldColumn>
+          <StyledInput
             type="date"
             value={date}
             min={formatDate(new Date())}
             onChange={e => setDate(e.target.value)}
             aria-label="날짜"
-            css={css`
-              box-sizing: border-box;
-              font-size: 16px;
-              font-weight: 500;
-              line-height: 1.5;
-              height: 48px;
-              background-color: ${colors.grey50};
-              border-radius: 12px;
-              color: ${colors.grey800};
-              width: 100%;
-              border: 1px solid ${colors.grey200};
-              padding: 0 16px;
-              outline: none;
-              transition: border-color 0.15s;
-              &:focus {
-                border-color: ${colors.blue500};
-              }
-            `}
           />
-        </div>
-      </div>
+        </FieldColumn>
+      </SectionPadding>
 
       <Spacing size={24} />
       <Border size={8} />
       <Spacing size={24} />
 
       {/* 예약 현황 타임라인 */}
-      <div
-        css={css`
-          padding: 0 24px;
-        `}
-      >
+      <SectionPadding>
         <Text typography="t5" fontWeight="bold" color={colors.grey900}>
           예약 현황
         </Text>
         <Spacing size={16} />
 
-        <div
-          css={css`
-            background: ${colors.grey50};
-            border-radius: 14px;
-            padding: 16px;
-          `}
-        >
+        <TimelineContainer>
           {/* 시간 헤더 */}
-          <div
-            css={css`
-              display: flex;
-              align-items: flex-end;
-              margin-bottom: 8px;
-            `}
-          >
-            <div
-              css={css`
-                width: 80px;
-                flex-shrink: 0;
-                padding-right: 8px;
-              `}
-            />
-            <div
-              css={css`
-                flex: 1;
-                position: relative;
-                height: 18px;
-              `}
-            >
+          <TimeHeaderRow>
+            <RoomLabelCell />
+            <TimeLabelArea>
               {HOUR_LABELS.map(t => {
                 const left = (timeToMinutes(t) / TOTAL_MINUTES) * 100;
                 return (
@@ -191,29 +131,15 @@ export function ReservationStatusPage() {
                   </Text>
                 );
               })}
-            </div>
-          </div>
+            </TimeLabelArea>
+          </TimeHeaderRow>
 
           {/* 회의실별 타임라인 */}
           {rooms.map((room: { id: string; name: string }, index: number) => {
             const roomReservations = reservations.filter((r: { roomId: string }) => r.roomId === room.id);
             return (
-              <div
-                key={room.id}
-                css={css`
-                  display: flex;
-                  align-items: center;
-                  height: 32px;
-                  ${index > 0 ? 'margin-top: 4px;' : ''}
-                `}
-              >
-                <div
-                  css={css`
-                    width: 80px;
-                    flex-shrink: 0;
-                    padding-right: 8px;
-                  `}
-                >
+              <RoomRow key={room.id} isFirst={index === 0}>
+                <RoomLabelCell>
                   <Text
                     typography="t7"
                     fontWeight="medium"
@@ -225,69 +151,23 @@ export function ReservationStatusPage() {
                   >
                     {room.name}
                   </Text>
-                </div>
-                <div
-                  css={css`
-                    flex: 1;
-                    height: 24px;
-                    background: ${colors.white};
-                    border-radius: 6px;
-                    position: relative;
-                    overflow: visible;
-                  `}
-                >
+                </RoomLabelCell>
+                <TimelineBar>
                   {roomReservations.map(
                     (res: { id: string; start: string; end: string; attendees: number; equipment: string[] }) => {
                       const left = (timeToMinutes(res.start) / TOTAL_MINUTES) * 100;
                       const width = ((timeToMinutes(res.end) - timeToMinutes(res.start)) / TOTAL_MINUTES) * 100;
                       const isActive = activeReservation === res.id;
                       return (
-                        <div
-                          key={res.id}
-                          css={css`
-                            position: absolute;
-                            left: ${left}%;
-                            width: ${width}%;
-                            height: 100%;
-                          `}
-                        >
-                          <div
+                        <ReservationBlockWrapper key={res.id} leftPercent={left} widthPercent={width}>
+                          <ReservationBarButton
                             role="button"
                             aria-label={`${room.name} ${res.start}-${res.end} 예약 상세`}
+                            isActive={isActive}
                             onClick={() => setActiveReservation(isActive ? null : res.id)}
-                            css={css`
-                              width: 100%;
-                              height: 100%;
-                              background: ${colors.blue400};
-                              border-radius: 4px;
-                              opacity: ${isActive ? 1 : 0.75};
-                              cursor: pointer;
-                              transition: opacity 0.15s;
-                              &:hover {
-                                opacity: 1;
-                              }
-                            `}
                           />
                           {isActive && (
-                            <div
-                              role="tooltip"
-                              css={css`
-                                position: absolute;
-                                top: 100%;
-                                left: 50%;
-                                transform: translateX(-50%);
-                                margin-top: 6px;
-                                background: ${colors.grey900};
-                                color: ${colors.white};
-                                padding: 8px 12px;
-                                border-radius: 8px;
-                                font-size: 12px;
-                                white-space: nowrap;
-                                z-index: 10;
-                                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-                                line-height: 1.6;
-                              `}
-                            >
+                            <TooltipBox role="tooltip">
                               <div>
                                 {res.start} ~ {res.end}
                               </div>
@@ -295,18 +175,18 @@ export function ReservationStatusPage() {
                               {res.equipment.length > 0 && (
                                 <div>{res.equipment.map((e: string) => EQUIPMENT_LABELS[e]).join(', ')}</div>
                               )}
-                            </div>
+                            </TooltipBox>
                           )}
-                        </div>
+                        </ReservationBlockWrapper>
                       );
                     }
                   )}
-                </div>
-              </div>
+                </TimelineBar>
+              </RoomRow>
             );
           })}
-        </div>
-      </div>
+        </TimelineContainer>
+      </SectionPadding>
 
       <Spacing size={24} />
       <Border size={8} />
@@ -314,21 +194,8 @@ export function ReservationStatusPage() {
 
       {/* 메시지 배너 */}
       {message && (
-        <div
-          css={css`
-            padding: 0 24px;
-          `}
-        >
-          <div
-            css={css`
-              padding: 10px 14px;
-              border-radius: 10px;
-              background: ${message.type === 'success' ? colors.blue50 : colors.red50};
-              display: flex;
-              align-items: center;
-              gap: 8px;
-            `}
-          >
+        <SectionPadding>
+          <MessageBannerBox messageType={message.type}>
             <Text
               typography="t7"
               fontWeight="medium"
@@ -336,24 +203,14 @@ export function ReservationStatusPage() {
             >
               {message.text}
             </Text>
-          </div>
+          </MessageBannerBox>
           <Spacing size={12} />
-        </div>
+        </SectionPadding>
       )}
 
       {/* 내 예약 목록 */}
-      <div
-        css={css`
-          padding: 0 24px;
-        `}
-      >
-        <div
-          css={css`
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-          `}
-        >
+      <SectionPadding>
+        <SectionHeader>
           <Text typography="t5" fontWeight="bold" color={colors.grey900}>
             내 예약
           </Text>
@@ -362,30 +219,17 @@ export function ReservationStatusPage() {
               {myReservationList.length}건
             </Text>
           )}
-        </div>
+        </SectionHeader>
         <Spacing size={16} />
 
         {myReservationList.length === 0 ? (
-          <div
-            css={css`
-              padding: 40px 0;
-              text-align: center;
-              background: ${colors.grey50};
-              border-radius: 14px;
-            `}
-          >
+          <EmptyState>
             <Text typography="t6" color={colors.grey500}>
               예약 내역이 없습니다.
             </Text>
-          </div>
+          </EmptyState>
         ) : (
-          <div
-            css={css`
-              display: flex;
-              flex-direction: column;
-              gap: 10px;
-            `}
-          >
+          <ReservationList>
             {myReservationList.map(
               (res: {
                 id: string;
@@ -396,15 +240,7 @@ export function ReservationStatusPage() {
                 attendees: number;
                 equipment: string[];
               }) => (
-                <div
-                  key={res.id}
-                  css={css`
-                    padding: 14px 16px;
-                    border-radius: 14px;
-                    background: ${colors.grey50};
-                    border: 1px solid ${colors.grey200};
-                  `}
-                >
+                <ReservationCard key={res.id}>
                   <ListRow
                     contents={
                       <ListRow.Text2Rows
@@ -432,28 +268,170 @@ export function ReservationStatusPage() {
                       </Button>
                     }
                   />
-                </div>
+                </ReservationCard>
               )
             )}
-          </div>
+          </ReservationList>
         )}
-      </div>
+      </SectionPadding>
 
       <Spacing size={24} />
       <Border size={8} />
       <Spacing size={24} />
 
       {/* 예약하기 버튼 */}
-      <div
-        css={css`
-          padding: 0 24px;
-        `}
-      >
+      <SectionPadding>
         <Button display="full" onClick={() => navigate('/booking')}>
           예약하기
         </Button>
-      </div>
+      </SectionPadding>
       <Spacing size={24} />
-    </div>
+    </PageWrapper>
   );
 }
+
+const PageWrapper = styled.div`
+  background: ${colors.white};
+  padding-bottom: 40px;
+`;
+
+const SectionPadding = styled.div`
+  padding: 0 24px;
+`;
+
+const FieldColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const StyledInput = styled.input`
+  box-sizing: border-box;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  height: 48px;
+  background-color: ${colors.grey50};
+  border-radius: 12px;
+  color: ${colors.grey800};
+  width: 100%;
+  border: 1px solid ${colors.grey200};
+  padding: 0 16px;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus {
+    border-color: ${colors.blue500};
+  }
+`;
+
+const TimelineContainer = styled.div`
+  background: ${colors.grey50};
+  border-radius: 14px;
+  padding: 16px;
+`;
+
+const TimeHeaderRow = styled.div`
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 8px;
+`;
+
+const RoomLabelCell = styled.div`
+  width: 80px;
+  flex-shrink: 0;
+  padding-right: 8px;
+`;
+
+const TimeLabelArea = styled.div`
+  flex: 1;
+  position: relative;
+  height: 18px;
+`;
+
+const RoomRow = styled.div<{ isFirst: boolean }>`
+  display: flex;
+  align-items: center;
+  height: 32px;
+  ${({ isFirst }) => !isFirst && 'margin-top: 4px;'}
+`;
+
+const TimelineBar = styled.div`
+  flex: 1;
+  height: 24px;
+  background: ${colors.white};
+  border-radius: 6px;
+  position: relative;
+  overflow: visible;
+`;
+
+const ReservationBlockWrapper = styled.div<{ leftPercent: number; widthPercent: number }>`
+  position: absolute;
+  left: ${({ leftPercent }) => leftPercent}%;
+  width: ${({ widthPercent }) => widthPercent}%;
+  height: 100%;
+`;
+
+const ReservationBarButton = styled.div<{ isActive: boolean }>`
+  width: 100%;
+  height: 100%;
+  background: ${colors.blue400};
+  border-radius: 4px;
+  opacity: ${({ isActive }) => (isActive ? 1 : 0.75)};
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+const TooltipBox = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  background: ${colors.grey900};
+  color: ${colors.white};
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  line-height: 1.6;
+`;
+
+const MessageBannerBox = styled.div<{ messageType: 'success' | 'error' }>`
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: ${({ messageType }) => (messageType === 'success' ? colors.blue50 : colors.red50)};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+`;
+
+const EmptyState = styled.div`
+  padding: 40px 0;
+  text-align: center;
+  background: ${colors.grey50};
+  border-radius: 14px;
+`;
+
+const ReservationList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const ReservationCard = styled.div`
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: ${colors.grey50};
+  border: 1px solid ${colors.grey200};
+`;
