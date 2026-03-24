@@ -2,11 +2,10 @@ import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Top, Spacing, Border, Button, Text, Select } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
 import { getRooms, getReservations, createReservation } from 'pages/remotes';
-import axios from 'axios';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
 import { TIME_SLOTS } from 'domains/reservation/constants/time';
 import { formatDate } from 'domains/reservation/utils/time';
@@ -14,7 +13,7 @@ import { formatDate } from 'domains/reservation/utils/time';
 import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
 import { useFilter } from './hooks/useFilter';
-import { Reservation } from '_tosslib/server/types';
+import { Reservation, Room } from '_tosslib/server/types';
 import { useReservationMutationOptions } from './queries/reservation';
 
 const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
@@ -28,6 +27,8 @@ const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterPar
 
   return null;
 };
+
+const getFloor = (rooms: Room[]) => [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export function RoomBookingPage() {
   const isFilterComplete = hasTimeInputs && !validationError;
 
   // 필터링
-  const floors = [...new Set(rooms.map((r: { floor: number }) => r.floor))].sort((a: number, b: number) => a - b);
+  const floors = getFloor(rooms);
 
   const availableRooms = isFilterComplete
     ? rooms.filter(room => isAvilableRoom(room, filter, reservations)).sort(sortByFloorAscAndName)
