@@ -10,7 +10,7 @@ import { getRooms, getMyReservations } from 'pages/remotes';
 import { formatDate } from 'domains/reservation/utils/time';
 import { MyReservationList } from './components/MyReservationList';
 import { RoomTimeline } from './components/RoomTimeline';
-import { DatePicker } from './components/DatePicker';
+import { DatePicker } from '../../components/DatePicker';
 import { MessageBanner } from './components/MessageBanner';
 import { useReservationMessage } from './hooks/useReservationMessage';
 

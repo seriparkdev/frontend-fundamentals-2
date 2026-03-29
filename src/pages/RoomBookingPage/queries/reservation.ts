@@ -11,6 +11,7 @@ export const useReservationMutationOptions = (
   const queryClient = useQueryClient();
 
   return {
+    mutationFn: (data: Omit<Reservation, 'id'>) => createReservation(data),
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries(['reservations', variables.date]);
       queryClient.invalidateQueries(['myReservations']);

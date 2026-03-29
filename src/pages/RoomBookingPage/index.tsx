@@ -1,90 +1,41 @@
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { Top, Spacing, Border, Button, Text, Select } from '_tosslib/components';
+import { useState } from 'react';
+import { Top, Spacing, Border, Button, Text } from '_tosslib/components';
 import { colors } from '_tosslib/constants/colors';
-import { getRooms, getReservations, createReservation } from 'pages/remotes';
 import { ALL_EQUIPMENT, EQUIPMENT_LABELS } from 'domains/reservation/constants/room';
-import { TIME_SLOTS } from 'domains/reservation/constants/time';
-import { formatDate } from 'domains/reservation/utils/time';
-
-import { isAvilableRoom, RoomFilterParams, sortByFloorAscAndName } from './utils/filtering';
 import { AvailableRooms } from './components/AvailableRooms';
+import { TimeSelect } from './components/TimeSelect';
+import { NumberSelect } from './components/NumberSelect';
+import { ToggleGroup } from './components/ToggleGroup';
 import { useFilter } from './hooks/useFilter';
-import { Reservation, Room } from '_tosslib/server/types';
-import { useReservationMutationOptions } from './queries/reservation';
-
-const getValidationErrorMessage = (hasTimeInputs: boolean, filter: RoomFilterParams) => {
-  if (hasTimeInputs) {
-    if (filter.endTime <= filter.startTime) {
-      return '종료 시간은 시작 시간보다 늦어야 합니다.';
-    } else if (filter.attendees < 1) {
-      return '참석 인원은 1명 이상이어야 합니다.';
-    }
-  }
-
-  return null;
-};
-
-const getFloor = (rooms: Room[]) => [...new Set(rooms.map(r => r.floor))].sort((a, b) => a - b);
+import { useAvailableRooms } from './hooks/useAvailableRooms';
+import { useRoomBooking } from './hooks/useRoomBooking';
+import { DatePicker } from 'components/DatePicker';
+import { useQuery } from '@tanstack/react-query';
+import { getReservations, getRooms } from 'pages/remotes';
+import { getFloor } from './utils/filtering';
 
 export function RoomBookingPage() {
   const navigate = useNavigate();
 
   const [filter, setFilter] = useFilter();
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleFilterChange = () => {
+    setSelectedRoomId(null);
+    setErrorMessage(null);
+  };
 
   const { data: rooms = [] } = useQuery(['rooms'], getRooms);
   const { data: reservations = [] } = useQuery(['reservations', filter.date], () => getReservations(filter.date), {
     enabled: !!filter.date,
   });
 
-  // 필터 변경 시 선택 초기화
-  const handleFilterChange = (message?: string) => {
-    setSelectedRoomId(null);
-    setErrorMessage(message ?? null);
-  };
-
-  const reservationMutationOptions = useReservationMutationOptions(handleFilterChange);
-  const createMutation = useMutation(
-    (data: Omit<Reservation, 'id'>) => createReservation(data),
-    reservationMutationOptions
-  );
-
-  const hasTimeInputs = filter.startTime !== '' && filter.endTime !== '';
-  const validationError: string | null = getValidationErrorMessage(hasTimeInputs, filter);
-
-  const isFilterComplete = hasTimeInputs && !validationError;
-
-  // 필터링
-  const floors = getFloor(rooms);
-
-  const availableRooms = isFilterComplete
-    ? rooms.filter(room => isAvilableRoom(room, filter, reservations)).sort(sortByFloorAscAndName)
-    : [];
-
-  const handleBook = () => {
-    if (!selectedRoomId) {
-      setErrorMessage('회의실을 선택해주세요.');
-      return;
-    }
-    if (!filter.startTime || !filter.endTime) {
-      setErrorMessage('시작 시간과 종료 시간을 선택해주세요.');
-      return;
-    }
-
-    createMutation.mutate({
-      roomId: selectedRoomId,
-      date: filter.date,
-      start: filter.startTime,
-      end: filter.endTime,
-      attendees: filter.attendees,
-      equipment: filter.equipment,
-    });
-  };
+  const { availableRooms, isFilterComplete, validationError } = useAvailableRooms(filter, rooms, reservations);
+  const { selectedRoomId, setSelectedRoomId, book } = useRoomBooking(filter, setErrorMessage);
 
   return (
     <PageWrapper>
@@ -115,77 +66,60 @@ export function RoomBookingPage() {
 
       <Spacing size={24} />
 
-      {/* 예약 조건 입력 */}
       <SectionPadding>
         <Text typography="t5" fontWeight="bold" color={colors.grey900}>
           예약 조건
         </Text>
         <Spacing size={16} />
 
-        {/* 날짜 */}
         <FieldColumn>
           <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
             날짜
           </Text>
-          <StyledInput
-            type="date"
+          <DatePicker
             value={filter.date}
-            min={formatDate(new Date())}
             onChange={e => {
               setFilter({ date: e.target.value });
               handleFilterChange();
             }}
-            aria-label="날짜"
           />
         </FieldColumn>
         <Spacing size={14} />
 
-        {/* 시간 */}
         <TimeRow>
           <TimeField>
             <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
               시작 시간
             </Text>
-            <Select
+            <TimeSelect
               value={filter.startTime}
               onChange={e => {
                 setFilter({ startTime: e.target.value });
                 handleFilterChange();
               }}
-              aria-label="시작 시간"
-            >
-              <option value="">선택</option>
-              {TIME_SLOTS.slice(0, -1).map(t => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </Select>
+              minTime="09:00"
+              maxTime="19:30"
+              ariaLabel="시작 시간"
+            />
           </TimeField>
           <TimeField>
             <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
               종료 시간
             </Text>
-            <Select
+            <TimeSelect
               value={filter.endTime}
               onChange={e => {
                 setFilter({ endTime: e.target.value });
                 handleFilterChange();
               }}
-              aria-label="종료 시간"
-            >
-              <option value="">선택</option>
-              {TIME_SLOTS.slice(1).map(t => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </Select>
+              minTime="09:30"
+              maxTime="20:00"
+              ariaLabel="종료 시간"
+            />
           </TimeField>
         </TimeRow>
         <Spacing size={14} />
 
-        {/* 참석 인원 + 선호 층 */}
         <TimeRow>
           <TimeField>
             <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
@@ -206,55 +140,33 @@ export function RoomBookingPage() {
             <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
               선호 층
             </Text>
-            <Select
-              value={filter.preferredFloor ?? ''}
-              onChange={e => {
-                const val = e.target.value;
-                setFilter({ preferredFloor: val === '' ? null : Number(val) });
+            <NumberSelect
+              value={filter.preferredFloor}
+              label="층"
+              onChange={val => {
+                setFilter({ preferredFloor: val });
                 handleFilterChange();
               }}
-              aria-label="선호 층"
-            >
-              <option value="">전체</option>
-              {floors.map((f: number) => (
-                <option key={f} value={f}>
-                  {f}층
-                </option>
-              ))}
-            </Select>
+              options={getFloor(rooms)}
+              ariaLabel="선호 층"
+            />
           </TimeField>
         </TimeRow>
         <Spacing size={14} />
 
-        {/* 장비 */}
-        <div>
-          <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
-            필요 장비
-          </Text>
-          <Spacing size={8} />
-          <EquipmentRow>
-            {ALL_EQUIPMENT.map(eq => {
-              const selected = filter.equipment.includes(eq);
-              return (
-                <EquipmentButton
-                  key={eq}
-                  type="button"
-                  isSelected={selected}
-                  onClick={() => {
-                    setFilter({
-                      equipment: selected ? filter.equipment.filter(e => e !== eq) : [...filter.equipment, eq],
-                    });
-                    handleFilterChange();
-                  }}
-                  aria-label={EQUIPMENT_LABELS[eq]}
-                  aria-pressed={selected}
-                >
-                  {EQUIPMENT_LABELS[eq]}
-                </EquipmentButton>
-              );
-            })}
-          </EquipmentRow>
-        </div>
+        <Text as="label" typography="t7" fontWeight="medium" color={colors.grey600}>
+          필요 장비
+        </Text>
+        <Spacing size={8} />
+        <ToggleGroup
+          options={ALL_EQUIPMENT}
+          value={filter.equipment}
+          onChange={equipment => {
+            setFilter({ equipment });
+            handleFilterChange();
+          }}
+          getLabel={eq => EQUIPMENT_LABELS[eq]}
+        />
       </SectionPadding>
 
       {validationError && (
@@ -268,7 +180,6 @@ export function RoomBookingPage() {
       <Border size={8} />
       <Spacing size={24} />
 
-      {/* 예약 가능 회의실 목록 */}
       {isFilterComplete && (
         <SectionPadding>
           <RoomCountHeader>
@@ -288,8 +199,8 @@ export function RoomBookingPage() {
           />
 
           <Spacing size={16} />
-          <Button display="full" onClick={handleBook} disabled={createMutation.isLoading}>
-            {createMutation.isLoading ? '예약 중...' : '확정'}
+          <Button display="full" onClick={book}>
+            확정
           </Button>
         </SectionPadding>
       )}
@@ -367,27 +278,6 @@ const StyledInput = styled.input`
   transition: border-color 0.15s;
   &:focus {
     border-color: ${colors.blue500};
-  }
-`;
-
-const EquipmentRow = styled.div`
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-const EquipmentButton = styled.button<{ isSelected: boolean }>`
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid ${({ isSelected }) => (isSelected ? colors.blue500 : colors.grey200)};
-  background: ${({ isSelected }) => (isSelected ? colors.blue50 : colors.grey50)};
-  color: ${({ isSelected }) => (isSelected ? colors.blue600 : colors.grey700)};
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  &:hover {
-    border-color: ${({ isSelected }) => (isSelected ? colors.blue500 : colors.grey400)};
   }
 `;
 
