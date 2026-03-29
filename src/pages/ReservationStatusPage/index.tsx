@@ -8,14 +8,21 @@ import { colors } from '_tosslib/constants/colors';
 import { getRooms, getMyReservations } from 'pages/remotes';
 
 import { formatDate } from 'domains/reservation/utils/time';
-import { MyReservationList } from './components/MyReservation';
+import { MyReservationList } from './components/MyReservationList';
 import { RoomTimeline } from './components/RoomTimeline';
+import { DatePicker } from './components/DatePicker';
+import { MessageBanner } from './components/MessageBanner';
+import { useReservationMessage } from './hooks/useReservationMessage';
 
 export function ReservationStatusPage() {
   const navigate = useNavigate();
+
   const [date, setDate] = useState(formatDate(new Date()));
 
+  const { message, setMessage } = useReservationMessage();
+
   const { data: rooms = [] } = useQuery(['rooms'], getRooms);
+
   const { data: myReservationList = [] } = useQuery(['myReservations'], getMyReservations);
 
   return (
@@ -31,20 +38,13 @@ export function ReservationStatusPage() {
 
       <Spacing size={24} />
 
-      {/* 날짜 선택 */}
       <SectionPadding>
         <Text typography="t5" fontWeight="bold" color={colors.grey900}>
           날짜 선택
         </Text>
         <Spacing size={16} />
         <FieldColumn>
-          <StyledInput
-            type="date"
-            value={date}
-            min={formatDate(new Date())}
-            onChange={e => setDate(e.target.value)}
-            aria-label="날짜"
-          />
+          <DatePicker value={date} onChange={e => setDate(e.target.value)} />
         </FieldColumn>
       </SectionPadding>
 
@@ -52,11 +52,11 @@ export function ReservationStatusPage() {
       <Border size={8} />
       <Spacing size={24} />
 
-      {/* 예약 현황 타임라인 */}
       <SectionPadding>
         <Text typography="t5" fontWeight="bold" color={colors.grey900}>
           예약 현황
         </Text>
+
         <Spacing size={16} />
 
         <RoomTimeline rooms={rooms} date={date} />
@@ -66,7 +66,6 @@ export function ReservationStatusPage() {
       <Border size={8} />
       <Spacing size={24} />
 
-      {/* 내 예약 목록 */}
       <SectionPadding>
         <SectionHeader>
           <Text typography="t5" fontWeight="bold" color={colors.grey900}>
@@ -78,16 +77,18 @@ export function ReservationStatusPage() {
             </Text>
           )}
         </SectionHeader>
-        <Spacing size={16} />
 
-        <MyReservationList reservations={myReservationList} rooms={rooms} />
+        <Spacing size={16} />
+        <MessageBanner message={message} />
+        <Spacing size={12} />
+
+        <MyReservationList reservations={myReservationList} rooms={rooms} onMessageChange={setMessage} />
       </SectionPadding>
 
       <Spacing size={24} />
       <Border size={8} />
       <Spacing size={24} />
 
-      {/* 예약하기 버튼 */}
       <SectionPadding>
         <Button display="full" onClick={() => navigate('/booking')}>
           예약하기
@@ -111,25 +112,6 @@ const FieldColumn = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
-`;
-
-const StyledInput = styled.input`
-  box-sizing: border-box;
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.5;
-  height: 48px;
-  background-color: ${colors.grey50};
-  border-radius: 12px;
-  color: ${colors.grey800};
-  width: 100%;
-  border: 1px solid ${colors.grey200};
-  padding: 0 16px;
-  outline: none;
-  transition: border-color 0.15s;
-  &:focus {
-    border-color: ${colors.blue500};
-  }
 `;
 
 const SectionHeader = styled.div`

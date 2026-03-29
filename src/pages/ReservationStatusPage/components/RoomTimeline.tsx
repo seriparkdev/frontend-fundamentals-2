@@ -21,7 +21,6 @@ export function RoomTimeline({ rooms, date }: Props) {
 
   return (
     <TimelineContainer>
-      {/* 시간 헤더 */}
       <TimeHeaderRow>
         <RoomLabelCell />
         <TimeLabelArea>
@@ -45,7 +44,6 @@ export function RoomTimeline({ rooms, date }: Props) {
         </TimeLabelArea>
       </TimeHeaderRow>
 
-      {/* 회의실별 타임라인 */}
       {rooms.map((room, index) => {
         return (
           <RoomRow key={room.id} isFirst={index === 0}>

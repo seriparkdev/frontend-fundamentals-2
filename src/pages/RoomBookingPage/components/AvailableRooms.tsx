@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { colors } from '_tosslib/constants/colors';
 import { Room } from '_tosslib/server/types';
 import { Text, ListRow } from '_tosslib/components';
-import { formatEquipment } from 'domains/reservation/utils/room';
+import { getEquipmentListText } from 'domains/reservation/utils/room';
 
 interface Props {
   availableRooms: Room[];
@@ -39,7 +39,7 @@ export function AvailableRooms({ availableRooms, selectedRoomId, onRoomClick }: 
                 <ListRow.Text2Rows
                   top={room.name}
                   topProps={{ typography: 't6', fontWeight: 'bold', color: colors.grey900 }}
-                  bottom={`${room.floor}층 · ${room.capacity}명 · ${formatEquipment(room.equipment)}`}
+                  bottom={`${room.floor}층 · ${room.capacity}명 · ${getEquipmentListText(room.equipment)}`}
                   bottomProps={{ typography: 't7', color: colors.grey600 }}
                 />
               }

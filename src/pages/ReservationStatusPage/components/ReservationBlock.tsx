@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { colors } from '_tosslib/constants/colors';
 import { Reservation, Room } from '_tosslib/server/types';
 import { TOTAL_MINUTES } from 'domains/reservation/constants/time';
-import { formatEquipment } from 'domains/reservation/utils/room';
+import { getEquipmentListText } from 'domains/reservation/utils/room';
 import { timeToMinutes } from 'domains/reservation/utils/time';
 import { useState } from 'react';
 
@@ -33,7 +33,7 @@ export function ReservationBlock({ reservation, room }: Props) {
             {reservation.start} ~ {reservation.end}
           </div>
           <div>{reservation.attendees}명</div>
-          {reservation.equipment.length > 0 && <div>{formatEquipment(reservation.equipment)}</div>}
+          {reservation.equipment.length > 0 && <div>{getEquipmentListText(reservation.equipment)}</div>}
         </TooltipBox>
       )}
     </ReservationBlockWrapper>
